@@ -1,0 +1,9 @@
+pandas==1.4.3
+Pillow==9.0.0
+schedule==1.1.0
+FairCore==4.3.1
+FairMongo==4.3.3
+FairNLP==4.1.0
+FairWeb==4.3.3
+FairResources==4.0.4
+python-dotenv~=0.19.2
