@@ -1,6 +1,7 @@
-from F import DICT, CONVERT, DATE, LIST
+from F import DICT, DATE, LIST
 from FM.FMDb import FMDB
 from FM.QueryHelper import O, Q
+from TheBrain.BrainDB import DB
 
 """
     - 1. Save all words and their count.
@@ -17,7 +18,6 @@ ANALYZED_WORDS_BY_DATE = "analyzed_words_by_date"
 
 class AnalyzedDB:
     db_brain = None
-    # db_collection = None
     model_categories = {}
     analyzed_words = None
     analyzed_stop_words = None
@@ -29,7 +29,8 @@ class AnalyzedDB:
         self.connect_to_brain()
 
     def connect_to_brain(self):
-        self.db_brain = FMDB().connect("192.168.1.180", 27017).database("brain")
+        client = FMDB(**DB.mongo_config)
+        self.db_brain = client.database("brain")
         self.analyzed_words = self.db_brain.collection(ANALYZED_WORDS)
         self.analyzed_stop_words = self.db_brain.collection(ANALYZED_STOP_WORDS)
         self.analyzed_webpages = self.db_brain.collection(ANALYZED_WEBPAGES)
@@ -52,11 +53,11 @@ class AnalyzedDB:
         collection = self.db_brain.collection(collection_name)
         return collection.add_records(word_counts)
 
-    def get_analyzed_words(self):
-        return self.analyzed_words.base_query({}, limit=0)
+    def get_analyzed_words(self, toRecords=False):
+        return self.analyzed_words.base_query({}, limit=0, toRecords=toRecords)
 
-    def get_all_analyzed_words_by_date(self):
-        return self.analyzed_words_by_date.base_query({}, limit=0)
+    def get_all_analyzed_words_by_date(self, toRecords=False):
+        return self.analyzed_words_by_date.base_query({}, limit=0, toRecords=toRecords)
 
     def get_analyzed_words_on_date(self, date):
         query = Q.BASE("date", DATE.TO_DATETIME(date))

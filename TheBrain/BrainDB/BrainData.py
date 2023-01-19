@@ -20,10 +20,5 @@ class BrainData:
         # self.analyzed_stop_words = self.db.get_analyzed_stop_words()
         # self.analyzed_webpages = self.db.get_analyzed_webpages()
 
-b = BrainData()
-if type(b.analyzed_words) in [Records]:
-    print("TRUE!")
-# b.smart_analyzed_words.collection_name = "analyzed_words_fakkkke"
-# first = b.smart_analyzed_words[0]
-# ex = first.export()
-# print(ex)
+
+

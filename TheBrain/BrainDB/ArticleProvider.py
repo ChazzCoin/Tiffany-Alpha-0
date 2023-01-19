@@ -1,6 +1,7 @@
-from F import DATE
-from TheBrain.JArticle import JQ, F
-from FM.DBDatabase import DBDatabase
+from F import DATE, LIST, DICT
+from TheBrain.BrainDB import DB
+from TheBrain.JArticle import JQ
+from FM.FMDb import FMDB
 from FM.QueryHelper import Q, A
 
 
@@ -22,10 +23,10 @@ class STAGE_LOOKUP(A):
         "as": outputName
     }
 MATCH_DATE_RANGE = lambda gte, lte: {"$match": {"$and": [JQ.DATE_PUB_GREATER_THAN(gte), JQ.DATE_PUB_LESS_THAN(lte)]}}
-class Provider(DBDatabase):
+class Provider(FMDB):
     db_core = None
-    db_brain: DBDatabase = None
-    db_research: DBDatabase = None
+    db_brain: FMDB = None
+    db_research: FMDB = None
     article_collection = None
 
     def __init__(self):
@@ -33,13 +34,13 @@ class Provider(DBDatabase):
         self.connect_to_research()
 
     def connect_to_research(self):
-        self.db_core = DBDatabase().connect("192.168.1.180", 27017)
+        self.db_core = FMDB(**DB.mongo_config)
         self.db_research = self.db_core.database("research")
         self.db_brain = self.db_core.database("brain")
         self.article_collection = self.db_research.collection("articles")
 
     def get_articles(self, limit=100):
-        return self.article_collection.base_query({}, limit=limit)
+        return self.db_core.database("research").collection("articles").base_query({}, limit=limit)
 
     def get_articles_by_date(self, date, limit=0):
         results = self.db_core.database("research").collection("articles").base_query(kwargs=JQ.DATE(date), limit=limit)
@@ -85,5 +86,26 @@ class Provider(DBDatabase):
 if __name__ == '__main__':
     db = Provider()
     # result = db.get_articles_not_analyzed()
-    result = db.get_articles_by_date_range(gte="July 01 2022", lte="August 01 2022")
-    print(result)
+    # result = db.get_articles_by_date_range(gte="July 01 2022", lte="Ju 01 2022")
+    result = db.get_articles(limit=100000)
+    # print(result)
+    final_body = ""
+    for art in result:
+        temp1 = DICT.get("title", art)
+        temp2 = DICT.get("body", art)
+        final_body += str(temp1) + str(temp2)
+
+    # test_body = "1234567890qwertyuiop[]asdfghjkl;'zxcvbnm,./QWERTYUIOPASDFGHJKLZXCVBNM<>?: "
+    chars = sorted(list(set(final_body)))
+    vocab_size = len(chars)
+    print(vocab_size)
+
+    # stoi = {ch: i for i, ch in enumerate(chars)}
+    # itos = {i: ch for i, ch in enumerate(chars)}
+    # encode = lambda s: [stoi[c] for c in s]
+    # decode = lambda l: ''.join(itos[i] for i in l)
+    # test = "what the fuck is going on right now?"
+    # e = encode(test)
+    # print(e)
+    # d = decode(e)
+    # print(d)

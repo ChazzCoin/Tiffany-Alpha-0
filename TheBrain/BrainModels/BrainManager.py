@@ -26,6 +26,18 @@ class BrainManager(BaseBrain, BrainVariables):
     brainData: BrainData = BrainData()
     contentManager: ContentManager.ContentManager = None
 
+    """
+    config:
+        enableAnalyzeWords = True
+        enableAnalyzeStopWords = True
+        enableAnalyzeWordsByDate = True
+    for db:
+        analyzed_words_for_db = []
+        analyzed_stop_words_for_db = []
+        analyzed_webpages_for_db = []
+        analyzed_words_by_date_for_db = []
+    """
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 

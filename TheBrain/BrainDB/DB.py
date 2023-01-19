@@ -5,8 +5,10 @@ from FRedis import Redis
 r = Redis(ip="192.168.1.229")
 mongo_config = r.get_config("mongo")
 
-_client_object = FMClient()
-CLIENT = lambda ip, port: _client_object.connect(ip, port)
+def getClientObject():
+    return FMClient(**mongo_config)
+
+CLIENT = lambda ip, port: getClientObject().connect(ip, port)
 
 def get_mongo_client(ip="192.168.1.180", port=27017):
     FMClient().connect(ip, port)
