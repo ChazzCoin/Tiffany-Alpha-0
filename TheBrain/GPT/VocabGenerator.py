@@ -8,7 +8,7 @@ from F import OS
 from TheBrain.GPT import Faircoder
 
 
-def get_data_set(articleLimit=1000):
+def get_data_set(articleLimit=10):
     _DATA = ""
     # Shakespeare
     with open('in/input.txt', 'r') as f:
@@ -23,7 +23,7 @@ def get_data_set(articleLimit=1000):
         _DATA += temp_all
     return _DATA
 
-OUT_DIR = "out3"
+OUT_DIR = "out2"
 CREATE_TRAINING_DATA_SET = True
 
 """ Create Vocab """

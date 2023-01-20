@@ -2,45 +2,48 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
-
+import gc
 class Fonfig:
     # hyperparameters
     init_from = 'resume'
-    always_save_checkpoint = True
+    always_save_checkpoint = False
+    save_iters = 10
     vocab_size = 0
     train_data = None
     val_data = None
-    iter_num = 1
-    max_iters = 1
+    iter_num = 5
+    max_iters = 5
     eval_iters = 1
-    eval_interval = 1
+    eval_interval = 5
     best_val_loss = 1e9
-    batch_size = 1 # how many independent sequences will we process in parallel?
-    block_size = 16 # what is the maximum context length for predictions?
-    learning_rate = 2e-4
-    device_type = 'cpu'
-    device = 'cpu'
+    batch_size = 2 # how many independent sequences will we process in parallel?
+    block_size = 64 # what is the maximum context length for predictions?
+    learning_rate = 3e-4
+    device_type = 'mps'
+    device = 'mps'
     # Hardware Performance Settings
-    n_embd = 1
-    n_head = 1
-    n_layer = 1
+    n_embd = 8
+    n_head = 2
+    n_layer = 2
     dropout = 0.0
     # ------------
 
 # torch.manual_seed(1337)
 
 # # # data loading
-# def get_batch2(split, config:Fonfig):
-#     # generate a small batch of data of inputs x and targets y
-#     data = config.train_data if split == 'train' else config.val_data
-#     ix = torch.randint(len(data) - config.block_size, (config.batch_size,))
-#     x = torch.stack([data[i:i+config.block_size] for i in ix])
-#     y = torch.stack([data[i+1:i+config.block_size+1] for i in ix])
-#     x, y = x.to(config.device), y.to(config.device)
-#     return x, y
+def get_batch2(split, config:Fonfig):
+    # generate a small batch of data of inputs x and targets y
+    gc.collect()
+    data = config.train_data if split == 'train' else config.val_data
+    ix = torch.randint(len(data) - config.block_size, (config.batch_size,))
+    x = torch.stack([data[i:i+config.block_size] for i in ix])
+    y = torch.stack([data[i+1:i+config.block_size+1] for i in ix])
+    x, y = x.to(config.device), y.to(config.device)
+    return x, y
 
 
 def get_batch(split, config:Fonfig):
+    gc.collect()
     data = config.train_data if split == 'train' else config.val_data
     ix = torch.randint(len(data) - config.block_size, (config.batch_size,))
     x = torch.stack([torch.from_numpy((data[i:i+config.block_size]).astype(np.int64)) for i in ix])
@@ -56,7 +59,10 @@ def estimate_loss(model, config:Fonfig):
         for k in range(config.eval_iters):
             X, Y = get_batch(split, config)
             logits, loss = model(X, Y)
+            del X, Y, logits
             losses[k] = loss.item()
+            del loss
+            gc.collect()
         out[split] = losses.mean()
     model.train()
     return out
