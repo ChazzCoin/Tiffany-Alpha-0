@@ -23,7 +23,7 @@ def get_data_set(articleLimit=1000):
         _DATA += temp_all
     return _DATA
 
-OUT_DIR = "out2"
+OUT_DIR = "out3"
 CREATE_TRAINING_DATA_SET = True
 
 """ Create Vocab """

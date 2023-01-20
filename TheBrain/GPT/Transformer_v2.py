@@ -5,20 +5,26 @@ from torch.nn import functional as F
 
 class Fonfig:
     # hyperparameters
+    init_from = 'resume'
+    always_save_checkpoint = True
     vocab_size = 0
     train_data = None
     val_data = None
-    batch_size = 64 # how many independent sequences will we process in parallel?
-    block_size = 256 # what is the maximum context length for predictions?
-    max_iters = 5000
-    eval_interval = 500
-    learning_rate = 3e-4
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    eval_iters = 200
-    n_embd = 384
-    n_head = 6
-    n_layer = 6
-    dropout = 0.2
+    iter_num = 1
+    max_iters = 1
+    eval_iters = 1
+    eval_interval = 1
+    best_val_loss = 1e9
+    batch_size = 1 # how many independent sequences will we process in parallel?
+    block_size = 16 # what is the maximum context length for predictions?
+    learning_rate = 2e-4
+    device_type = 'cpu'
+    device = 'cpu'
+    # Hardware Performance Settings
+    n_embd = 1
+    n_head = 1
+    n_layer = 1
+    dropout = 0.0
     # ------------
 
 # torch.manual_seed(1337)
@@ -41,7 +47,6 @@ def get_batch(split, config:Fonfig):
     y = torch.stack([torch.from_numpy((data[i+1:i+1+config.block_size]).astype(np.int64)) for i in ix])
     x, y = x.to(config.device), y.to(config.device)
     return x, y
-#
 @torch.no_grad()
 def estimate_loss(model, config:Fonfig):
     out = {}
@@ -132,7 +137,7 @@ class Block(nn.Module):
 class BigramLanguageModel(nn.Module):
     _config = None
 
-    def __init__(self, config:Fonfig):
+    def __init__(self, config:Fonfig=None):
         super().__init__()
         # each token directly reads off the logits for the next token from a lookup table
         self._config = config

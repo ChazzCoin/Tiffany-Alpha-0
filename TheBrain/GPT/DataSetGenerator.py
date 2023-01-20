@@ -33,5 +33,5 @@ val_ids = e_coder(val_data)
 # export to bin files
 train_ids = np.array(train_ids, dtype=np.uint16)
 val_ids = np.array(val_ids, dtype=np.uint16)
-train_ids.tofile(f'{cwd}/out/train.bin')
-val_ids.tofile(f'{cwd}/out/val.bin')
+train_ids.tofile(f'{cwd}/out/train2.bin')
+val_ids.tofile(f'{cwd}/out/val2.bin')

@@ -4,3 +4,9 @@ docker-build.sh
 .idea
 git-push-changes.sh
 pip-deploy.sh
+*.pkl
+*.bin
+*.pt
+*/out2
+*/backup
+/TheBrain/GPT/out3/

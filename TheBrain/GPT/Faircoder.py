@@ -32,6 +32,14 @@ def get_decoder_object(decoder_dict):
 def get_vocab_pickle(metaPath):
     return Utils.load_pickle_file(metaPath)
 
+def encoder_from_pickle(meta):
+    e, _ = meta['encode'], meta['decode']
+    return get_encoder_object(e)
+
+def decoder_from_pickle(meta):
+    _, d = meta['encode'], meta['decode']
+    return get_decoder_object(d)
+
 def encoder_from_vocab(metaPath):
     meta = get_vocab_pickle(metaPath)
     e, _ = meta['encode'], meta['decode']
