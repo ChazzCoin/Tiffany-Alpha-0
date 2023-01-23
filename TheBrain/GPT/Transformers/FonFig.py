@@ -22,13 +22,15 @@ class FonfigGPT:
     init_from = 'resume'  # 'scratch' or 'resume' or 'gpt2*'
     out_dir = '../../out'
     checkpoint_file_name = "ckpt.pt"
+    always_save_checkpoint = True  # if True, always save a checkpoint after each eval
+    save_count_interval = 50
     train_data_path = None
     val_data_path = None
     eval_interval = 5
     log_interval = 1
     eval_iters = 5
     eval_only = False  # if True, script exits right after the first eval
-    always_save_checkpoint = True  # if True, always save a checkpoint after each eval
+
     # data
     gradient_accumulation_steps = 1  # used to simulate larger batch sizes
     batch_size = 32  # if gradient_accumulation_steps > 1, this is the micro-batch size

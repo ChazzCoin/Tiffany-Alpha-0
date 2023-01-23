@@ -155,6 +155,7 @@ def get_lr(iter_num):
 t0 = time.time()
 # init these up here, can override if init_from='resume' (i.e. from a checkpoint)
 best_val_loss = 1e9
+save_counter = 0
 while True:
 
     # determine the learning rate for this iteration
@@ -172,7 +173,7 @@ while True:
         if losses['val'] < best_val_loss or config.always_save_checkpoint:
             best_val_loss = losses['val']
             raw_model = model.module if config.ddp else model
-            if iteration_count > 0:
+            if iteration_count % config.save_count_interval == 0:
                 """ Saving Checkpoint. """
                 checkpoint = CHECKPOINT_GPT(raw_model.state_dict(),
                                             optimizer.state_dict(),
