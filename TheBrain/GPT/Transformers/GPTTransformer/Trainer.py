@@ -14,7 +14,6 @@ $ torchrun --nproc_per_node=8 --nnodes=2 --node_rank=1 --master_addr=123.456.123
 """
 
 import time
-import math
 import torch
 from F import OS
 from GPTTransformer import GPTConfig, GPT
@@ -22,6 +21,9 @@ from TheBrain.GPT.DataVocabGenerators import DataSetGenerator
 from TheBrain.GPT.Encoders import TikToken
 from TheBrain.GPT.Transformers.FonFig import FonfigGPT, CHECKPOINT_GPT
 from TheBrain.GPT import out as o
+from TheBrain import Utils
+
+DATA_LOAD = { "train_data": "", "val_data": "" }
 
 TORCH_LOADER = lambda file_path: torch.load(file_path)
 TORCH_SAVER = lambda data, file_path: torch.save(data, file_path)
@@ -48,20 +50,31 @@ def setup_new_dataset(articleLimit=1000, saveTrainValData=True):
     """ Setup Train/Val Data """
     _tensor_data = torch.tensor(_encoded_data, dtype=torch.long)
     _n = int(0.9 * len(_tensor_data))  # first 90% will be train, rest val
-    _train_data = _tensor_data[:_n]
-    _val_data = _tensor_data[_n:]
+    DATA_LOAD["train_data"] = _tensor_data[:_n]
+    DATA_LOAD["val_data"] = _tensor_data[_n:]
     if saveTrainValData:
-        torch.save(train_data, o.OUT_FILE_GETTER(o._training_name))
-        torch.save(val_data, o.OUT_FILE_GETTER(o._val_name))
-    return _vocab_size, _train_data, _val_data
+        print("Saving New Training and Validation Data. ")
+        torch.save(DATA_LOAD["train_data"], o.OUT_FILE_GETTER(o._training_name))
+        torch.save(DATA_LOAD["val_data"], o.OUT_FILE_GETTER(o._val_name))
+    return _vocab_size
+
+def setup_checkpoint_dataset():
+    DATA_LOAD["train_data"] = TORCH_LOADER(o.OUT_FILE_GETTER(o._training_name))
+    DATA_LOAD["val_data"] = TORCH_LOADER(o.OUT_FILE_GETTER(o._val_name))
 
 
 """ model init -> Scratch, Resume """
 iteration_count = 0
 if checkpoint and config.init_from == 'resume':
     print(f"Resuming Training from Checkpoint.")
-    train_data = TORCH_LOADER(o.OUT_FILE_GETTER(o._training_name))
-    val_data = TORCH_LOADER(o.OUT_FILE_GETTER(o._val_name))
+
+    if config.load_from_checkpoint_dataset:
+        print("Loading Existing Training and Validation Data. ")
+        setup_checkpoint_dataset()
+    else:
+        print("Loading New Training and Validation Data. ")
+        setup_new_dataset(articleLimit=100000)
+
     model_args = checkpoint['model_args']
     state_dict = checkpoint['model']
     iteration_count = checkpoint['iteration_count']
@@ -79,12 +92,10 @@ else:
     # init a new model from scratch
     print("Initializing a New Model from scratch")
     """ Setup New DataSet """
-    v_size, t_data, v_data = setup_new_dataset()
+    v_size = setup_new_dataset()
     """ Setup Config """
     config.vocab_size = v_size
-    config.train_data = t_data
     config.train_data_path = o.OUT_FILE_GETTER(o._training_name)
-    config.val_data = v_data
     config.val_data_path = o.OUT_FILE_GETTER(o._val_name)
 
     """ Setup Model Args """
@@ -101,55 +112,14 @@ else:
     iteration_count = 0
 
 
-
 # crop down the model block size if desired
 if config.block_size < model.config.block_size:
     model.crop_block_size(config.block_size)
-
 
 # optimizer
 optimizer = model.configure_optimizers(config.weight_decay, config.learning_rate, (config.beta1, config.beta2))
 if checkpoint or config.init_from == 'resume':
     optimizer.load_state_dict(checkpoint['optimizer'])
-
-def get_batch(split):
-    data = config.train_data if split == 'train' else config.val_data
-    ix = torch.randint(len(data) - config.block_size, (config.batch_size,))
-    x = torch.stack([data[i:i+config.block_size] for i in ix])
-    y = torch.stack([data[i+1:i+config.block_size+1] for i in ix])
-    x, y = x.to(config.device), y.to(config.device)
-    return x, y
-
-# todo: move this into Utils.
-@torch.no_grad()
-def estimate_loss():
-    out = {}
-    model.eval()
-    for split in ['train', 'val']:
-        losses = torch.zeros(config.eval_iters)
-        for k in range(config.eval_iters):
-            X, Y = get_batch(split)
-            # with ctx:
-            logits, loss = model(X, Y)
-            losses[k] = loss.item()
-        out[split] = losses.mean()
-    model.train()
-    return out
-
-"""# learning rate decay scheduler (cosine with warmup)"""
-def get_lr(iter_num):
-    # 1) linear warmup for warmup_iters steps
-    if iter_num < config.warmup_iters:
-        return config.learning_rate * iter_num / config.warmup_iters
-    # 2) if iter > lr_decay_iters, return min learning rate
-    if iter_num > config.lr_decay_iters:
-        return config.min_lr
-    # 3) in between, use cosine decay down to min learning rate
-    decay_ratio = (iter_num - config.warmup_iters) / (config.lr_decay_iters - config.warmup_iters)
-    assert 0 <= decay_ratio <= 1
-    coeff = 0.5 * (1.0 + math.cos(math.pi * decay_ratio)) # coeff ranges 0..1
-    return config.min_lr + coeff * (config.learning_rate - config.min_lr)
-
 
 """ Training Loop """
 t0 = time.time()
@@ -160,7 +130,7 @@ while True:
 
     # determine the learning rate for this iteration
     if config.decay_lr:
-        lr = get_lr(iteration_count)
+        lr = Utils.get_lr(iteration_count, config)
         for param_group in optimizer.param_groups:
             param_group['lr'] = lr
     else:
@@ -168,8 +138,9 @@ while True:
 
     # evaluate the loss on train/val sets and write checkpoints
     if iteration_count % config.eval_interval == 0:
-        losses = estimate_loss()
-        print(f"step {iteration_count}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
+        losses = Utils.estimate_loss(model, config, DATA_LOAD["train_data"], DATA_LOAD["val_data"])
+        print(f"Round: [ {iteration_count} ] Train -> LOSS: [ {losses['train']:.4f} ]")
+        print(f"Round: [ {iteration_count} ] Val -> LOSS: [ {losses['val']:.4f} ]")
         if losses['val'] < best_val_loss or config.always_save_checkpoint:
             best_val_loss = losses['val']
             raw_model = model.module if config.ddp else model
@@ -177,7 +148,7 @@ while True:
                 """ Saving Checkpoint. """
                 checkpoint = CHECKPOINT_GPT(raw_model.state_dict(),
                                             optimizer.state_dict(),
-                                            model_args, iteration_count,
+                                            model_args, iteration_count+1,
                                             best_val_loss, config)
                 checkpoint_path = o.OUT_FILE_GETTER(config.checkpoint_file_name)
                 TORCH_SAVER(checkpoint, checkpoint_path)
@@ -188,7 +159,7 @@ while True:
     # forward backward update, with optional gradient accumulation to simulate larger batch size
     optimizer.zero_grad(set_to_none=True)
     for micro_step in range(config.gradient_accumulation_steps):
-        X, Y = get_batch('train')
+        X, Y = Utils.get_batch('train', config, DATA_LOAD["train_data"], DATA_LOAD["val_data"])
         if config.ddp:
             # in DDP training we only need to sync gradients at the last micro step.
             # the official way to do this is with model.no_sync() context manager, but
@@ -206,7 +177,7 @@ while True:
     t0 = t1
     if iteration_count % config.log_interval == 0:
         lossf = loss.item() # loss as float. TODO note CPU-GPU sync! profile, make sure not too slow
-        print(f"iter {iteration_count}: loss {lossf:.4f}, time {dt*1000:.2f}ms")
+        print(f"Round: [ {iteration_count} ] LOSS: [ {lossf:.4f} ], TIME: [ {dt*1000:.2f}ms ]")
     iteration_count += 1
 
     # termination conditions
