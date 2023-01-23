@@ -139,8 +139,7 @@ while True:
     # evaluate the loss on train/val sets and write checkpoints
     if iteration_count % config.eval_interval == 0:
         losses = Utils.estimate_loss(model, config, DATA_LOAD["train_data"], DATA_LOAD["val_data"])
-        print(f"Round: [ {iteration_count} ] Train -> LOSS: [ {losses['train']:.4f} ]")
-        print(f"Round: [ {iteration_count} ] Val -> LOSS: [ {losses['val']:.4f} ]")
+        print(f"Round: [ {iteration_count} ] Train -> LOSS: [ {losses['train']:.4f} ] | Val -> LOSS: [ {losses['val']:.4f} ]")
         if losses['val'] < best_val_loss or config.always_save_checkpoint:
             best_val_loss = losses['val']
             raw_model = model.module if config.ddp else model
