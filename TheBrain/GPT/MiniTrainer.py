@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from TheBrain import Utils
 from TheBrain.GPT.Encoders import Faircoder
-from Transformer_v2 import Fonfig, BigramLanguageModel, get_batch, estimate_loss
+from TheBrain.GPT.Transformers.BiGramTransformer import BigramLanguageModel, get_batch, estimate_loss
 
 
 import resource

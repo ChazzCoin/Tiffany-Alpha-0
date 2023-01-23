@@ -2,9 +2,9 @@ import os
 
 from F import OS
 import torch
-from TheBrain.GPT import DataSetGenerator, VocabGenerators
-from TheBrain.GPT.Encoders import Faircoder, TikToken
-from Transformer_v2 import Fonfig, BigramLanguageModel
+from TheBrain.GPT.DataVocabGenerators import DataSetGenerator
+from TheBrain.GPT.Encoders import TikToken
+from TheBrain.GPT.BiGramTransformer.Transformer_v2 import Fonfig, BigramLanguageModel
 
 import resource
 os.environ["LRU_CACHE_CAPACITY"] = '1'

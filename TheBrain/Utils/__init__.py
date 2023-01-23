@@ -2,6 +2,7 @@ import pickle
 
 
 def load_pickle_file(picklePath):
+    pkl = None
     with open(picklePath, 'rb') as f:
         pkl = pickle.load(f)
     return pkl

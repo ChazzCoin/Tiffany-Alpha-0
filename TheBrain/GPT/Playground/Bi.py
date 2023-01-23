@@ -35,7 +35,7 @@ print(f"vocab_size = {vocab_size}")
 #     with open('input.txt', 'w') as f:
 #         f.write(requests.get(data_url).text)
 
-with open('../VocabGenerators/input.txt', 'r') as f:
+with open('../DataVocabGenerators/input.txt', 'r') as f:
     data = f.read()
 n = len(data)
 

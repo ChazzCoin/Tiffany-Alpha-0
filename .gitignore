@@ -7,6 +7,6 @@ pip-deploy.sh
 *.pkl
 *.bin
 *.pt
-*/out2
+*/out
 */backup
 /TheBrain/GPT/out3/

@@ -16,15 +16,14 @@ $ torchrun --nproc_per_node=8 --nnodes=2 --node_rank=1 --master_addr=123.456.123
 import os
 import time
 import math
-import pickle
 from contextlib import nullcontext
 
 import numpy as np
 import torch
-from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.distributed import init_process_group, destroy_process_group
+from torch.distributed import init_process_group
 
-from TheBrain.GPT import VocabGenerators, DataSetGenerator
+from TheBrain.GPT import DataVocabGenerators
+from TheBrain.GPT.DataVocabGenerators import DataSetGenerator
 from TheBrain.GPT.Encoders import Faircoder
 from Transformer_v1 import GPTConfig, GPT
 
@@ -99,9 +98,9 @@ ptdtype = {'float32': torch.float32, 'bfloat16': torch.bfloat16}[dtype]
 ctx = nullcontext() if device_type == 'cpu' else torch.amp.autocast(device_type=device_type, dtype=ptdtype)
 
 
-encoder_dict = VocabGenerators.load_fair_encoder()
+encoder_dict = DataVocabGenerators.load_fair_encoder()
 ENCODE = Faircoder.get_encoder_object(encoder_dict)
-decoder_dict = VocabGenerators.load_fair_decoder()
+decoder_dict = DataVocabGenerators.load_fair_decoder()
 DECODE = Faircoder.get_decoder_object(decoder_dict)
 raw_data = DataSetGenerator.get_raw_data_set()
 tensor_data = torch.tensor(ENCODE(raw_data), dtype=torch.long)
