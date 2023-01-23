@@ -1,5 +1,5 @@
 from TheBrain.BrainDB.ArticleProvider import Provider
-from F import OS, FILE
+from F import OS, FILE, DICT
 
 cwd = OS.get_cwd()
 
@@ -16,7 +16,9 @@ def get_raw_data_set(articleLimit=10) -> str:
     result = db.get_articles(limit=articleLimit)
     print("Article Count:", len(result))
     for art in result:
-        temp_all = str(art)
+        title = DICT.get("title", art, "")
+        body = DICT.get("body", art, "")
+        temp_all = title + " " + body
         _DATA += temp_all
     return _DATA
 

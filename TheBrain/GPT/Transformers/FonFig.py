@@ -19,7 +19,7 @@ CHECKPOINT_GPT = lambda model_state_dict, optimizer_state_dict, model_args, iter
                 }
 
 class FonfigGPT:
-    init_from = 'resume'  # 'scratch' or 'resume' or 'gpt2*'
+    init_from = 'scratch'  # 'scratch' or 'resume' or 'gpt2*'
     out_dir = '../../out'
     checkpoint_file_name = "ckpt.pt"
     load_from_checkpoint_dataset = True

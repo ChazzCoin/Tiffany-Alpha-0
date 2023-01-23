@@ -5,7 +5,7 @@ import torch
 from TheBrain.GPT.Encoders import TikToken
 from GPTTransformer import GPTConfig, GPT
 
-start = "There was a girl in the room, " # or "<|endoftext|>" or whatever you like
+start = "tell me a story" # or "<|endoftext|>" or whatever you like
 num_samples = 10 # number of samples to draw
 max_new_tokens = 500 # number of tokens generated in each sample
 temperature = 0.8 # higher temperature (up to 1) is more random, lower (down to 0) means more greedy
