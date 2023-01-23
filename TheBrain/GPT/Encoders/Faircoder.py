@@ -25,7 +25,7 @@ SPLIT_10_PERCENT = lambda data: data[int(0.9 * len(data)):]
 SPLIT_TRAINING_VAL = lambda data: (SPLIT_90_PERCENT(data), SPLIT_10_PERCENT(data))
 
 def get_encoder_object(encoder_dict):
-    return lambda s: [encoder_dict[c] for c in s]
+    return lambda s: [encoder_dict[str(c)] for c in s]
 
 def get_decoder_object(decoder_dict):
     return lambda l: ''.join([decoder_dict[i] for i in l])

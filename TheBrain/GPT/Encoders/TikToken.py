@@ -7,3 +7,6 @@ def encode(data):
 
 def decode(data):
     return TIK_GPT2_ENCODER.decode(data)
+
+def get_tiktoken_vocab_count():
+    return TIK_GPT2_ENCODER.n_vocab

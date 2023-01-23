@@ -1,8 +1,7 @@
-import numpy as np
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
-import gc
+
 class Fonfig:
     # hyperparameters
     init_from = 'resume'
@@ -11,8 +10,8 @@ class Fonfig:
     vocab_size = 0
     train_data = None
     val_data = None
-    iter_num = 200
-    max_iters = 200
+    iter_num = 500
+    max_iters = 500
     eval_iters = 1
     eval_interval = 5
     best_val_loss = 1e9
@@ -27,45 +26,6 @@ class Fonfig:
     n_layer = 8
     dropout = 0.2
     # ------------
-
-# torch.manual_seed(1337)
-
-# # # data loading
-# def get_batch(split, config:Fonfig):
-#     # generate a small batch of data of inputs x and targets y
-#     # gc.collect()
-#     data = config.train_data if split == 'train' else config.val_data
-#     ix = torch.randint(len(data) - config.block_size, (config.batch_size,))
-#     x = torch.stack([data[i:i+config.block_size] for i in ix])
-#     y = torch.stack([data[i+1:i+config.block_size+1] for i in ix])
-#     x, y = x.to(config.device), y.to(config.device)
-#     return x, y
-#
-#
-# def get_batch2(split, config:Fonfig):
-#     gc.collect()
-#     data = config.train_data if split == 'train' else config.val_data
-#     ix = torch.randint(len(data) - config.block_size, (config.batch_size,))
-#     x = torch.stack([torch.from_numpy((data[i:i+config.block_size]).astype(np.int64)) for i in ix])
-#     y = torch.stack([torch.from_numpy((data[i+1:i+1+config.block_size]).astype(np.int64)) for i in ix])
-#     x, y = x.to(config.device), y.to(config.device)
-#     return x, y
-# @torch.no_grad()
-# def estimate_loss(model, config:Fonfig):
-#     out = {}
-#     model.eval()
-#     for split in ['train', 'val']:
-#         losses = torch.zeros(config.eval_iters)
-#         for k in range(config.eval_iters):
-#             X, Y = get_batch(split, config)
-#             logits, loss = model(X, Y)
-#             # del X, Y, logits
-#             losses[k] = loss.item()
-#             # del loss
-#             # gc.collect()
-#         out[split] = losses.mean()
-#     model.train()
-#     return out
 
 class Head(nn.Module):
     """ one head of self-attention """

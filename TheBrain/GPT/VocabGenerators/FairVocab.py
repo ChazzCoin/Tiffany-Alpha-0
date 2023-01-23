@@ -26,7 +26,8 @@ CREATE_TRAINING_DATA_SET = True
 
 """ Create Vocab """
 DATA = get_data_set()
-# DATA = str(DATA).encode('utf8')
+DATA_en = str(DATA).encode('utf8')
+DATA_de = DATA_en.decode()
 vocab_size = len(DATA)
 print("Vocab Size:", vocab_size)
 RAW_vocab = fc.CREATE_VOCAB(DATA)
