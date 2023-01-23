@@ -1,27 +1,28 @@
 import torch
 from TheBrain import Utils
 
+
 """ 1. Input: All Text -> Extracts Unique Characters -> Output: List[Char] """
-extract_vocab = lambda text: sorted(list(set(text)))
+CREATE_VOCAB = lambda text: sorted(list(set(text)))
 
 """ Input: List[Char] -> Encoder Mapping. -> Output: Dict{ Int: Char }
 Key = Character
 Value = Int
 """
-encoder_dictionary = lambda vocab: {ch: i for i, ch in enumerate(vocab)}
-encoder = lambda s, encoder_dict: [encoder_dict[c] for c in s]
+ENCODE_TO_DICT = lambda vocab: {ch: i for i, ch in enumerate(vocab)}
+FAIR_ENCODER = lambda s, encoder_dict: [encoder_dict[c] for c in s]
 
 """ Input: List[Char] -> Decoder Mapping. -> Output: Dict{ Int: Char } 
 Key = Int
 Value = Character
 """
-decoder_dictionary = lambda vocab: {i: ch for i, ch in enumerate(vocab)}
-decoder = lambda l, decoder_dict: ''.join([decoder_dict[i] for i in l])
+DECODE_TO_DICT = lambda vocab: {i: ch for i, ch in enumerate(vocab)}
+FAIR_DECODER = lambda l, decoder_dict: ''.join([decoder_dict[i] for i in l])
 
-encoded_data = lambda encodedText: torch.tensor(encodedText, dtype=torch.long)
-training_data = lambda data: data[:int(0.9 * len(data))]
-val_data = lambda data: data[int(0.9 * len(data)):]
-training_val_data = lambda data: (training_data(data), val_data(data))
+TO_TENSOR = lambda data: torch.tensor(data, dtype=torch.long)
+SPLIT_90_PERCENT = lambda data: data[:int(0.9 * len(data))]
+SPLIT_10_PERCENT = lambda data: data[int(0.9 * len(data)):]
+SPLIT_TRAINING_VAL = lambda data: (SPLIT_90_PERCENT(data), SPLIT_10_PERCENT(data))
 
 def get_encoder_object(encoder_dict):
     return lambda s: [encoder_dict[c] for c in s]
@@ -51,7 +52,7 @@ def decoder_from_vocab(metaPath):
     return get_decoder_object(d)
 
 def get_encode_decode_dictionaries(data) -> (dict,dict):
-    vocab = extract_vocab(data)
-    edict = encoder_dictionary(vocab)
-    dedict = decoder_dictionary(vocab)
+    vocab = CREATE_VOCAB(data)
+    edict = ENCODE_TO_DICT(vocab)
+    dedict = DECODE_TO_DICT(vocab)
     return edict, dedict

@@ -1,14 +1,12 @@
 import os
-from contextlib import nullcontext
 
-import numpy as np
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
 from TheBrain import Utils
-from TheBrain.GPT import Faircoder
-from TheBrain.GPT.Transformer_v2 import Fonfig
+from TheBrain.GPT.Encoders import Faircoder
+
 torch.manual_seed(1337)
 # hyperparameters
 batch_size = 8 # how many independent sequences will we process in parallel?
@@ -37,7 +35,7 @@ print(f"vocab_size = {vocab_size}")
 #     with open('input.txt', 'w') as f:
 #         f.write(requests.get(data_url).text)
 
-with open('../in/input.txt', 'r') as f:
+with open('../VocabGenerators/input.txt', 'r') as f:
     data = f.read()
 n = len(data)
 

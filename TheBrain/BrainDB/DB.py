@@ -4,14 +4,12 @@ from FRedis import Redis
 
 r = Redis(ip="192.168.1.229")
 mongo_config = r.get_config("mongo")
-
-def getClientObject():
-    return FMClient(**mongo_config)
-
-CLIENT = lambda ip, port: getClientObject().connect(ip, port)
-
-def get_mongo_client(ip="192.168.1.180", port=27017):
+def get_mongo_client(ip="sozindb.vaatu.co", port=1214):
     FMClient().connect(ip, port)
+# def getClientObject():
+#     return FMClient(**mongo_config)
+#
+CLIENT = lambda ip, port: get_mongo_client()
 
 def get_brain_db(client:FMClient):
     return FMDB(dbclient=client).database("brain")

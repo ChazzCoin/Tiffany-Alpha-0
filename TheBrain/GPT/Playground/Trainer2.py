@@ -24,15 +24,17 @@ import torch
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.distributed import init_process_group, destroy_process_group
 
-from Transformer import GPTConfig, GPT
+from TheBrain.GPT import VocabGenerators, DataSetGenerator
+from TheBrain.GPT.Encoders import Faircoder
+from Transformer_v1 import GPTConfig, GPT
 
 # -----------------------------------------------------------------------------
 # default config values designed to train a gpt2 (124M) on OpenWebText
 # I/O
 out_dir = '../out'
-eval_interval = 2000
+eval_interval = 5
 log_interval = 1
-eval_iters = 200
+eval_iters = 5
 eval_only = False # if True, script exits right after the first eval
 always_save_checkpoint = True # if True, always save a checkpoint after each eval
 init_from = 'scratch' # 'scratch' or 'resume' or 'gpt2*'
@@ -43,22 +45,22 @@ wandb_run_name = 'gpt2' # 'run' + str(time.time())
 # data
 dataset = 'openwebtext'
 gradient_accumulation_steps = 1 # used to simulate larger batch sizes
-batch_size = 12 # if gradient_accumulation_steps > 1, this is the micro-batch size
-block_size = 1024
+batch_size = 8 # if gradient_accumulation_steps > 1, this is the micro-batch size
+block_size = 64
 # model
-n_layer = 12
-n_head = 12
-n_embd = 768
+n_layer = 4
+n_head = 4
+n_embd = 4
 dropout = 0.0 # for pretraining 0 is good, for finetuning try 0.1+
 # adamw optimizer
-learning_rate = 6e-4 # max learning rate
-max_iters = 600000 # total number of training iterations
+learning_rate = 2e-4 # max learning rate
+max_iters = 5 # total number of training iterations
 weight_decay = 1e-2
 beta1 = 0.9
 beta2 = 0.95
 # learning rate decay settings
 decay_lr = True # whether to decay the learning rate
-warmup_iters = 2000 # how many steps to warm up for
+warmup_iters = 5 # how many steps to warm up for
 lr_decay_iters = 600000 # should be ~= max_iters per Chinchilla
 min_lr = 6e-5 # minimum learning rate, should be ~= learning_rate/10 per Chinchilla
 # DDP settings
@@ -96,11 +98,27 @@ device_type = 'cpu' if 'cuda' in device else 'cpu' # for later use in torch.auto
 ptdtype = {'float32': torch.float32, 'bfloat16': torch.bfloat16}[dtype]
 ctx = nullcontext() if device_type == 'cpu' else torch.amp.autocast(device_type=device_type, dtype=ptdtype)
 
-# poor man's data loader, TODO evaluate need for actual DataLoader
-train_data = np.memmap(os.path.join(out_dir, 'train.bin'), dtype=np.uint16, mode='r')
-val_data = np.memmap(os.path.join(out_dir, 'val.bin'), dtype=np.uint16, mode='r')
+
+encoder_dict = VocabGenerators.load_fair_encoder()
+ENCODE = Faircoder.get_encoder_object(encoder_dict)
+decoder_dict = VocabGenerators.load_fair_decoder()
+DECODE = Faircoder.get_decoder_object(decoder_dict)
+raw_data = DataSetGenerator.get_raw_data_set()
+tensor_data = torch.tensor(ENCODE(raw_data), dtype=torch.long)
+train_data, val_data = Faircoder.SPLIT_TRAINING_VAL(tensor_data)
+vocab_size = len(raw_data)
+print(f"vocab_size = {vocab_size}")
+
 
 def get_batch(split):
+    data = train_data if split == 'train' else val_data
+    ix = torch.randint(len(data) - block_size, (batch_size,))
+    x = torch.stack([data[i:i+block_size] for i in ix])
+    y = torch.stack([data[i+1:i+1+block_size] for i in ix])
+    x, y = x.to(device), y.to(device)
+    return x, y
+
+def get_batch2(split):
     data = train_data if split == 'train' else val_data
     ix = torch.randint(len(data) - block_size, (batch_size,))
     x = torch.stack([torch.from_numpy((data[i:i+block_size]).astype(np.int64)) for i in ix])
@@ -111,13 +129,6 @@ def get_batch(split):
 # init these up here, can override if init_from='resume' (i.e. from a checkpoint)
 iter_num = 0
 best_val_loss = 1e9
-
-# attempt to derive vocab_size from the dataset
-from TheBrain import Utils
-meta = Utils.load_pickle_file(os.path.join(out_dir, 'meta.pkl'))
-vocab_size = meta['vocab_size']
-print(f"vocab_size = {vocab_size}")
-
 
 # model init
 model_args = dict(n_layer = n_layer, n_head = n_head, n_embd = n_embd, block_size = block_size, dropout = dropout, vocab_size = vocab_size)
@@ -280,5 +291,8 @@ while True:
         print("Terminating...")
         break
 
-if ddp:
-    destroy_process_group()
+context = torch.zeros((1, 1), dtype=torch.long, device=device)
+encoded_output = model.generate(context, max_new_tokens=500)[0].tolist()
+print(encoded_output)
+decoded = DECODE(encoded_output)
+print(decoded)

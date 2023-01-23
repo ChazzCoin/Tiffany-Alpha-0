@@ -11,61 +11,61 @@ class Fonfig:
     vocab_size = 0
     train_data = None
     val_data = None
-    iter_num = 5
-    max_iters = 5
+    iter_num = 200
+    max_iters = 200
     eval_iters = 1
     eval_interval = 5
     best_val_loss = 1e9
-    batch_size = 2 # how many independent sequences will we process in parallel?
+    batch_size = 32 # how many independent sequences will we process in parallel?
     block_size = 64 # what is the maximum context length for predictions?
     learning_rate = 3e-4
-    device_type = 'mps'
-    device = 'mps'
+    device_type = 'cpu'
+    device = 'cpu'
     # Hardware Performance Settings
-    n_embd = 8
-    n_head = 2
-    n_layer = 2
-    dropout = 0.0
+    n_embd = 16
+    n_head = 8
+    n_layer = 8
+    dropout = 0.2
     # ------------
 
 # torch.manual_seed(1337)
 
 # # # data loading
-def get_batch2(split, config:Fonfig):
-    # generate a small batch of data of inputs x and targets y
-    gc.collect()
-    data = config.train_data if split == 'train' else config.val_data
-    ix = torch.randint(len(data) - config.block_size, (config.batch_size,))
-    x = torch.stack([data[i:i+config.block_size] for i in ix])
-    y = torch.stack([data[i+1:i+config.block_size+1] for i in ix])
-    x, y = x.to(config.device), y.to(config.device)
-    return x, y
-
-
-def get_batch(split, config:Fonfig):
-    gc.collect()
-    data = config.train_data if split == 'train' else config.val_data
-    ix = torch.randint(len(data) - config.block_size, (config.batch_size,))
-    x = torch.stack([torch.from_numpy((data[i:i+config.block_size]).astype(np.int64)) for i in ix])
-    y = torch.stack([torch.from_numpy((data[i+1:i+1+config.block_size]).astype(np.int64)) for i in ix])
-    x, y = x.to(config.device), y.to(config.device)
-    return x, y
-@torch.no_grad()
-def estimate_loss(model, config:Fonfig):
-    out = {}
-    model.eval()
-    for split in ['train', 'val']:
-        losses = torch.zeros(config.eval_iters)
-        for k in range(config.eval_iters):
-            X, Y = get_batch(split, config)
-            logits, loss = model(X, Y)
-            del X, Y, logits
-            losses[k] = loss.item()
-            del loss
-            gc.collect()
-        out[split] = losses.mean()
-    model.train()
-    return out
+# def get_batch(split, config:Fonfig):
+#     # generate a small batch of data of inputs x and targets y
+#     # gc.collect()
+#     data = config.train_data if split == 'train' else config.val_data
+#     ix = torch.randint(len(data) - config.block_size, (config.batch_size,))
+#     x = torch.stack([data[i:i+config.block_size] for i in ix])
+#     y = torch.stack([data[i+1:i+config.block_size+1] for i in ix])
+#     x, y = x.to(config.device), y.to(config.device)
+#     return x, y
+#
+#
+# def get_batch2(split, config:Fonfig):
+#     gc.collect()
+#     data = config.train_data if split == 'train' else config.val_data
+#     ix = torch.randint(len(data) - config.block_size, (config.batch_size,))
+#     x = torch.stack([torch.from_numpy((data[i:i+config.block_size]).astype(np.int64)) for i in ix])
+#     y = torch.stack([torch.from_numpy((data[i+1:i+1+config.block_size]).astype(np.int64)) for i in ix])
+#     x, y = x.to(config.device), y.to(config.device)
+#     return x, y
+# @torch.no_grad()
+# def estimate_loss(model, config:Fonfig):
+#     out = {}
+#     model.eval()
+#     for split in ['train', 'val']:
+#         losses = torch.zeros(config.eval_iters)
+#         for k in range(config.eval_iters):
+#             X, Y = get_batch(split, config)
+#             logits, loss = model(X, Y)
+#             # del X, Y, logits
+#             losses[k] = loss.item()
+#             # del loss
+#             # gc.collect()
+#         out[split] = losses.mean()
+#     model.train()
+#     return out
 
 class Head(nn.Module):
     """ one head of self-attention """
@@ -96,9 +96,9 @@ class Head(nn.Module):
 class MultiHeadAttention(nn.Module):
     """ multiple heads of self-attention in parallel """
 
-    def __init__(self, num_heads, head_size, config:Fonfig):
+    def __init__(self, head_size, config:Fonfig):
         super().__init__()
-        self.heads = nn.ModuleList([Head(head_size, config) for _ in range(num_heads)])
+        self.heads = nn.ModuleList([Head(head_size, config) for _ in range(config.n_head)])
         self.proj = nn.Linear(config.n_embd, config.n_embd)
         self.dropout = nn.Dropout(config.dropout)
 
@@ -110,12 +110,12 @@ class MultiHeadAttention(nn.Module):
 class FeedFoward(nn.Module):
     """ a simple linear layer followed by a non-linearity """
 
-    def __init__(self, n_embd, config:Fonfig):
+    def __init__(self, config:Fonfig):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(n_embd, 4 * n_embd),
+            nn.Linear(config.n_embd, 4 * config.n_embd),
             nn.ReLU(),
-            nn.Linear(4 * n_embd, n_embd),
+            nn.Linear(4 * config.n_embd, config.n_embd),
             nn.Dropout(config.dropout),
         )
 
@@ -125,14 +125,14 @@ class FeedFoward(nn.Module):
 class Block(nn.Module):
     """ Transformer block: communication followed by computation """
 
-    def __init__(self, n_embd, n_head, config:Fonfig):
+    def __init__(self, config:Fonfig):
         # n_embd: embedding dimension, n_head: the number of heads we'd like
         super().__init__()
-        head_size = n_embd // n_head
-        self.sa = MultiHeadAttention(n_head, head_size, config)
-        self.ffwd = FeedFoward(n_embd, config)
-        self.ln1 = nn.LayerNorm(n_embd)
-        self.ln2 = nn.LayerNorm(n_embd)
+        head_size = config.n_embd // config.n_head
+        self.sa = MultiHeadAttention(head_size, config)
+        self.ffwd = FeedFoward(config)
+        self.ln1 = nn.LayerNorm(config.n_embd)
+        self.ln2 = nn.LayerNorm(config.n_embd)
 
     def forward(self, x):
         x = x + self.sa(self.ln1(x))
@@ -147,15 +147,14 @@ class BigramLanguageModel(nn.Module):
         super().__init__()
         # each token directly reads off the logits for the next token from a lookup table
         self._config = config
-        self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
-        self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
-        self.blocks = nn.Sequential(*[Block(config.n_embd, n_head=config.n_head, config=config) for _ in range(config.n_layer)])
-        self.ln_f = nn.LayerNorm(config.n_embd) # final layer norm
-        self.lm_head = nn.Linear(config.n_embd, config.vocab_size)
+        self.token_embedding_table = nn.Embedding(self._config.vocab_size, self._config.n_embd)
+        self.position_embedding_table = nn.Embedding(self._config.block_size, self._config.n_embd)
+        self.blocks = nn.Sequential(*[Block(self._config) for _ in range(self._config.n_layer)])
+        self.ln_f = nn.LayerNorm(self._config.n_embd) # final layer norm
+        self.lm_head = nn.Linear(self._config.n_embd, self._config.vocab_size)
 
     def forward(self, idx, targets=None):
         B, T = idx.shape
-
         # idx and targets are both (B,T) tensor of integers
         tok_emb = self.token_embedding_table(idx) # (B,T,C)
         pos_emb = self.position_embedding_table(torch.arange(T, device=self._config.device)) # (T,C)

@@ -20,6 +20,6 @@ def chart_word(word):
     data = records.map_fields(prepared_records, "date", word, sortByKey=True)
     show_chart(data, x, y)
 
-chart_word("covid")
+chart_word("Microsoft")
 
 

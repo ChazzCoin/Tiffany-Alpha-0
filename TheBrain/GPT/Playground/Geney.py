@@ -7,7 +7,7 @@ from contextlib import nullcontext
 import torch
 from F import OS
 
-from TheBrain.GPT import Faircoder
+from TheBrain.GPT.Encoders import Faircoder
 from Transformer import GPTConfig, GPT
 
 # -----------------------------------------------------------------------------

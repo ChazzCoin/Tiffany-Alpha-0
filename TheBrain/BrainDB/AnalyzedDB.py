@@ -29,7 +29,7 @@ class AnalyzedDB:
         self.connect_to_brain()
 
     def connect_to_brain(self):
-        client = FMDB(**DB.mongo_config)
+        client = FMDB(ip="sozindb.vaatu.co", port=1214)
         self.db_brain = client.database("brain")
         self.analyzed_words = self.db_brain.collection(ANALYZED_WORDS)
         self.analyzed_stop_words = self.db_brain.collection(ANALYZED_STOP_WORDS)

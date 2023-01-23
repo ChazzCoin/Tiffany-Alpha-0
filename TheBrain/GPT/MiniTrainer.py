@@ -1,16 +1,12 @@
 import os
-from contextlib import nullcontext
 import numpy as np
 import torch
 from TheBrain import Utils
-from TheBrain.GPT import Faircoder
+from TheBrain.GPT.Encoders import Faircoder
 from Transformer_v2 import Fonfig, BigramLanguageModel, get_batch, estimate_loss
-torch.manual_seed(1337)
 
-print(torch.backends.mps.is_available())
 
 import resource
-
 os.environ["LRU_CACHE_CAPACITY"] = '1'
 soft, hard = resource.getrlimit(resource.RLIMIT_AS)
 resource.setrlimit(resource.RLIMIT_AS, (soft, hard))
@@ -29,8 +25,8 @@ t_data = np.memmap(os.path.join(out_dir, 'train.bin'), dtype=np.uint16, mode='r'
 v_data = np.memmap(os.path.join(out_dir, 'val.bin'), dtype=np.uint16, mode='r')
 # np.
 # torch.tensor(t_data)
-train_data = torch.tensor(t_data, dtype=torch.long)
-val_data = torch.tensor(v_data, dtype=torch.long)
+# train_data = torch.tensor(t_data, dtype=torch.long)
+# val_data = torch.tensor(v_data, dtype=torch.long)
 
 """ Create Config for Transformer """
 config = Fonfig()
@@ -38,8 +34,8 @@ config.vocab_size = vocab_size
 config.train_data = train_data
 config.val_data = val_data
 
-dtype = 'bfloat16' # 'float32' or 'bfloat16'
-ptdtype = {'float32': torch.float32, 'bfloat16': torch.bfloat16}[dtype]
+# dtype = 'bfloat16' # 'float32' or 'bfloat16'
+# ptdtype = {'float32': torch.float32, 'bfloat16': torch.bfloat16}[dtype]
 # ctx = nullcontext() if config.device_type == 'mps' else torch.amp.autocast(device_type=config.device_type, dtype=ptdtype)
 # torch.amp.autocast(device_type=config.device_type, dtype=ptdtype)
 """ Help Clear Some Memory """
