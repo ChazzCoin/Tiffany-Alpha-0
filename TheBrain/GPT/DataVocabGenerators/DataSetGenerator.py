@@ -18,7 +18,7 @@ def get_raw_data_set(articleLimit=10) -> str:
     for art in result:
         title = DICT.get("title", art, "")
         body = DICT.get("body", art, "")
-        temp_all = title + " " + body
+        temp_all = str(title) + " " + str(body)
         _DATA += temp_all
     return _DATA
 
@@ -31,14 +31,3 @@ def get_raw_train_and_val(raw_data=None) -> ([],[]):
     train_data = DATA[:int(n*0.9)]
     val_data = DATA[int(n*0.9):]
     return train_data, val_data
-
-# e_coder = Faircoder.encoder_from_vocab(f'{cwd}/out/meta.pkl')
-# train_ids = e_coder(train_data)
-# val_ids = e_coder(val_data)
-
-# def to_file(encoded_data):
-#     # export to bin files
-#     train_ids = np.array(train_ids, dtype=np.uint16)
-#     val_ids = np.array(val_ids, dtype=np.uint16)
-#     train_ids.tofile(f'{cwd}/out/train2.bin')
-#     val_ids.tofile(f'{cwd}/out/val2.bin')
