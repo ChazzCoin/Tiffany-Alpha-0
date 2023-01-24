@@ -40,7 +40,7 @@ except:
 model = AutoModelForSequenceClassification.from_pretrained(MODEL_PATH)
 model.save_pretrained(MODEL_PATH)
 
-text = "It was a pretty bad movie really."
+text = "The girl was chill"
 text = preprocess(text)
 encoded_input = tokenizer(text, return_tensors='pt')
 output = model(**encoded_input)
